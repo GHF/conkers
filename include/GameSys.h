@@ -53,7 +53,8 @@ protected:
     std::vector<std::shared_ptr<GameObject>> gameObjects;
 
     cpVect screenCenter;
-    cpBB walls;
+    cpBB bounds;
+    cpShape *walls[4];
 
 public:
     GameSys(int screenWidth, int screenHeight, const Cairo::Matrix &screenToWorld);

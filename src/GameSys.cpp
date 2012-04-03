@@ -42,7 +42,7 @@ GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen)
                 worldToScreen(worldToScreen),
                 screenToWorld(worldToScreen),
                 screenCenter(cpvzero),
-                walls(cpBBNew(-150, -100, 150, 100)) {
+                bounds(cpBBNew(-105, -90, 105, 90)) {
     screenToWorld.invert();
 }
 
@@ -74,6 +74,17 @@ void GameSys::init() {
             cpBodyWorld2Local(player->getBody(), cpvzero));
     mouseJoint->maxForce = 100000.0;
     cpSpaceAddConstraint(space, mouseJoint);
+
+    // set up walls
+    walls[0] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.t), cpv(bounds.l, bounds.b), 0);
+    walls[1] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.b), cpv(bounds.r, bounds.b), 0);
+    walls[2] = cpSegmentShapeNew(space->staticBody, cpv(bounds.r, bounds.t), cpv(bounds.r, bounds.b), 0);
+    walls[3] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.t), cpv(bounds.r, bounds.t), 0);
+    const cpFloat wallFriction = 0.6;
+    for (cpShape *wall : walls) {
+        cpShapeSetFriction(wall, wallFriction);
+        cpSpaceAddShape(space, wall);
+    }
 }
 
 void GameSys::cleanup() {
@@ -109,8 +120,10 @@ void GameSys::sim(double t, double dt) {
     screenError.x = cpfmod(screenError.x, screenWidth / 4);
     screenError.y = cpfmod(screenError.y, screenHeight / 4);
     screenToWorld.transform_distance(screenError.x, screenError.y);
+    screenError.x = copysign(screenError.x * screenError.x, screenError.x);
+    screenError.y = copysign(screenError.y * screenError.y, screenError.y);
 
-    screenCenter = screenCenter + screenError * 0.01;
+    screenCenter = screenCenter + screenError * (0.75 * dt);
 
     cpSpaceStep(space, dt);
 }
@@ -121,6 +134,29 @@ void GameSys::render(RefPtr<Context> cr, double t, double dt) {
 
     // center screen within window
     cr->translate(-screenCenter.x, -screenCenter.y);
+
+    const double gridSpacing = 15.0;
+    cr->set_source_rgb(0.7, 0.7, 0.7);
+    cr->set_line_width(0.1);
+    for (double x = bounds.l; x < bounds.r; x += gridSpacing) {
+        cr->move_to(x, bounds.t);
+        cr->line_to(x, bounds.b);
+        cr->stroke();
+    }
+    for (double y = bounds.b; y < bounds.t; y += gridSpacing) {
+        cr->move_to(bounds.l, y);
+        cr->line_to(bounds.r, y);
+        cr->stroke();
+    }
+
+    cr->set_source_rgb(0.0, 0.0, 0.0);
+    cr->set_line_width(0.2);
+    cr->move_to(bounds.l, bounds.t);
+    cr->line_to(bounds.l, bounds.b);
+    cr->line_to(bounds.r, bounds.b);
+    cr->line_to(bounds.r, bounds.t);
+    cr->line_to(bounds.l, bounds.t);
+    cr->stroke();
 
     cpBody * const playerBody = hammerConstraint->a;
     cpBody * const hammerBody = hammerConstraint->b;
