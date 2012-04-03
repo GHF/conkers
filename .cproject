@@ -58,7 +58,7 @@
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="z"/>
 									<listOptionValue builtIn="false" value="pthread"/>
-									<listOptionValue builtIn="false" value="chipmunk"/>
+									<listOptionValue builtIn="false" value="chipmunkd"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1619749136" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/extern/lib}&quot;"/>
