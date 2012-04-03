@@ -40,17 +40,23 @@ protected:
     double bgColor[3];
     cpSpace *space;
 
+    int screenWidth;
+    int screenHeight;
+    Cairo::Matrix worldToScreen;
     Cairo::Matrix screenToWorld;
+
     PixelToaster::Mouse mouse;
     cpBody *mouseBody;
     cpConstraint *mouseJoint;
     cpConstraint *hammerConstraint;
 
     std::vector<std::shared_ptr<GameObject>> gameObjects;
-    // TODO: walls & window
+
+    cpVect screenCenter;
+    cpBB walls;
 
 public:
-    GameSys(const Cairo::Matrix &screenToWorld);
+    GameSys(int screenWidth, int screenHeight, const Cairo::Matrix &screenToWorld);
 
     void init();
     void sim(double t, double dt);

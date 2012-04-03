@@ -42,8 +42,8 @@ int main(int argc, const char * const argv[]) {
     using namespace Cairo;
     using namespace std;
 
-    const int width = 960;
-    const int height = 600;
+    const int width = 1280;
+    const int height = 800;
 
     Display display(argv[0], width, height, Output::Default, Mode::TrueColor);
 
@@ -63,10 +63,10 @@ int main(int argc, const char * const argv[]) {
     cr->scale(0.01, 0.01);
     const Matrix worldToScreen = cr->get_matrix();
 
-    GameSys gameSys(worldToScreen);
+    GameSys gameSys(width, height, worldToScreen);
     display.listener(&gameSys);
 
-    SimLoop simLoop(&gameSys, 1.0 / 60);
+    SimLoop simLoop(&gameSys, 1.0 / 120);
     simLoop.start();
 
     while (display.open()) {

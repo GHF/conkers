@@ -35,8 +35,14 @@ using namespace std;
 using namespace Cairo;
 using namespace PixelToaster;
 
-GameSys::GameSys(const Matrix &worldToScreen) :
-        bgColor(), screenToWorld(worldToScreen) {
+GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen) :
+        bgColor( { 1.0, 1.0, 1.0 }),
+                screenWidth(screenWidth),
+                screenHeight(screenHeight),
+                worldToScreen(worldToScreen),
+                screenToWorld(worldToScreen),
+                screenCenter(cpvzero),
+                walls(cpBBNew(-150, -100, 150, 100)) {
     screenToWorld.invert();
 }
 
@@ -49,7 +55,7 @@ void GameSys::init() {
     shared_ptr<PlayerObject> player(new PlayerObject(10.0, 3.0));
     gameObjects.push_back(player);
 
-    shared_ptr<HammerObject> hammer(new HammerObject(100.0, 7.0, 5.0, cpv(0, -12.0)));
+    shared_ptr<HammerObject> hammer(new HammerObject(20.0, 7.0, 5.0, cpv(0, -12.0)));
     gameObjects.push_back(hammer);
 
     hammerConstraint = cpPinJointNew(player->getBody(), hammer->getBody(), cpvzero, cpv(0, 2.3));
@@ -66,7 +72,7 @@ void GameSys::init() {
             player->getBody(),
             cpvzero,
             cpBodyWorld2Local(player->getBody(), cpvzero));
-//    mouseJoint->maxForce = 100000.0;
+    mouseJoint->maxForce = 100000.0;
     cpSpaceAddConstraint(space, mouseJoint);
 }
 
@@ -84,17 +90,37 @@ void GameSys::sim(double t, double dt) {
 
     cpVect mousePos = cpv(mouse.x, mouse.y);
     screenToWorld.transform_point(mousePos.x, mousePos.y);
+    mousePos = mousePos + screenCenter;
     // IIR LPF on mouse movements
     cpVect newMousePoint = cpvlerp(mouseBody->p, mousePos, 0.99);
     mouseBody->v = (newMousePoint - mouseBody->p) * dt;
     mouseBody->p = newMousePoint;
 
+    // amount to shift the screen this frame
+    cpVect playerScreenPos = cpBodyGetPos(gameObjects.front()->getBody()) - screenCenter;
+    worldToScreen.transform_point(playerScreenPos.x, playerScreenPos.y);
+    cpVect screenError = cpv(playerScreenPos.x - screenWidth / 2, playerScreenPos.y - screenHeight / 2);
+    if (fabs(screenError.x) < screenWidth / 4) {
+        screenError.x = 0;
+    }
+    if (fabs(screenError.y) < screenHeight / 4) {
+        screenError.y = 0;
+    }
+    screenError.x = cpfmod(screenError.x, screenWidth / 4);
+    screenError.y = cpfmod(screenError.y, screenHeight / 4);
+    screenToWorld.transform_distance(screenError.x, screenError.y);
+
+    screenCenter = screenCenter + screenError * 0.01;
+
     cpSpaceStep(space, dt);
 }
 
 void GameSys::render(RefPtr<Context> cr, double t, double dt) {
-    cr->set_source_rgb(1.0, 1.0, 1.0);
+    cr->set_source_rgb(bgColor[0], bgColor[1], bgColor[2]);
     cr->paint();
+
+    // center screen within window
+    cr->translate(-screenCenter.x, -screenCenter.y);
 
     cpBody * const playerBody = hammerConstraint->a;
     cpBody * const hammerBody = hammerConstraint->b;
