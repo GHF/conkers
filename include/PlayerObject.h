@@ -41,7 +41,7 @@ public:
         }
     }
 
-    void init();
+    void init(cpSpace *space);
     void sim(double t, double dt);
     void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
 };

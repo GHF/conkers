@@ -29,11 +29,10 @@ using namespace Cairo;
 
 PlayerObject::PlayerObject(cpFloat mass, cpFloat radius, const cpVect &pos) :
         GameObject(mass, cpMomentForCircle(mass, 0, radius, cpvzero), pos), radius(radius) {
-    shape = cpCircleShapeNew(body, radius, cpvzero);
 }
 
-void PlayerObject::init() {
-
+void PlayerObject::init(cpSpace *space) {
+    shape = cpSpaceAddShape(space, cpCircleShapeNew(body, radius, cpvzero));
 }
 
 void PlayerObject::sim(double t, double dt) {
@@ -41,8 +40,7 @@ void PlayerObject::sim(double t, double dt) {
 }
 
 void PlayerObject::render(RefPtr<Context> cr, double t, double dt) {
-    cr->set_source_rgba(0.0, 0.0, 0.0, 0.85);
-    cr->set_line_width(0.2);
+    cr->set_source_rgba(0.0, 0.0, 0.0, 1);
     cr->arc(0, 0, radius, 0, 2 * M_PI);
-    cr->stroke();
+    cr->fill();
 }

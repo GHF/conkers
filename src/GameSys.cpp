@@ -25,6 +25,7 @@
 
 #include "GameSys.h"
 #include "PlayerObject.h"
+#include "HammerObject.h"
 
 #include <chipmunk.h>
 
@@ -43,12 +44,19 @@ void GameSys::init() {
     cpVect gravity = cpv(0, -100);
     space = cpSpaceNew();
     cpSpaceSetGravity(space, gravity);
+    cpSpaceSetDamping(space, 0.3);
 
-    shared_ptr<PlayerObject> player(new PlayerObject(10.0, 2.0));
+    shared_ptr<PlayerObject> player(new PlayerObject(10.0, 3.0));
     gameObjects.push_back(player);
 
+    shared_ptr<HammerObject> hammer(new HammerObject(100.0, 7.0, 5.0, cpv(0, -12.0)));
+    gameObjects.push_back(hammer);
+
+    hammerConstraint = cpPinJointNew(player->getBody(), hammer->getBody(), cpvzero, cpv(0, 2.3));
+    cpSpaceAddConstraint(space, hammerConstraint);
+
     for (shared_ptr<GameObject> gameObject : gameObjects) {
-        gameObject->init();
+        gameObject->init(space);
         cpSpaceAddBody(space, gameObject->getBody());
     }
 
@@ -58,14 +66,14 @@ void GameSys::init() {
             player->getBody(),
             cpvzero,
             cpBodyWorld2Local(player->getBody(), cpvzero));
-    mouseJoint->maxForce = 50000.0f;
-    mouseJoint->errorBias = cpfpow(1.0f - 0.15f, 60.0f);
+//    mouseJoint->maxForce = 100000.0;
     cpSpaceAddConstraint(space, mouseJoint);
 }
 
 void GameSys::cleanup() {
     cpSpaceFree(space);
     cpConstraintFree(mouseJoint);
+    cpConstraintFree(hammerConstraint);
     cpBodyFree(mouseBody);
 }
 
@@ -77,7 +85,7 @@ void GameSys::sim(double t, double dt) {
     cpVect mousePos = cpv(mouse.x, mouse.y);
     screenToWorld.transform_point(mousePos.x, mousePos.y);
     // IIR LPF on mouse movements
-    cpVect newMousePoint = cpvlerp(mouseBody->p, mousePos, 0.95);
+    cpVect newMousePoint = cpvlerp(mouseBody->p, mousePos, 0.99);
     mouseBody->v = (newMousePoint - mouseBody->p) * dt;
     mouseBody->p = newMousePoint;
 
@@ -87,6 +95,20 @@ void GameSys::sim(double t, double dt) {
 void GameSys::render(RefPtr<Context> cr, double t, double dt) {
     cr->set_source_rgb(1.0, 1.0, 1.0);
     cr->paint();
+
+    cpBody * const playerBody = hammerConstraint->a;
+    cpBody * const hammerBody = hammerConstraint->b;
+    cpVect anchor1 = cpPinJointGetAnchr1(hammerConstraint);
+    cpVect anchor2 = cpPinJointGetAnchr2(hammerConstraint);
+    const cpVect playerPos = cpBodyLocal2World(playerBody, anchor1)
+            + cpBodyGetVelAtLocalPoint(playerBody, anchor1) * dt;
+    const cpVect hammerPos = cpBodyLocal2World(hammerBody, anchor2)
+            + cpBodyGetVelAtLocalPoint(hammerBody, anchor2) * dt;
+    cr->set_line_width(0.7);
+    cr->set_source_rgba(0.0, 0.0, 0.0, 0.5);
+    cr->move_to(playerPos.x, playerPos.y);
+    cr->line_to(hammerPos.x, hammerPos.y);
+    cr->stroke();
 
     // render each game object
     for (shared_ptr<GameObject> gameObject : gameObjects) {

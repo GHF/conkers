@@ -44,6 +44,7 @@ protected:
     PixelToaster::Mouse mouse;
     cpBody *mouseBody;
     cpConstraint *mouseJoint;
+    cpConstraint *hammerConstraint;
 
     std::vector<std::shared_ptr<GameObject>> gameObjects;
     // TODO: walls & window
