@@ -33,6 +33,7 @@
 #include <cairomm/cairomm.h>
 
 #include <vector>
+#include <memory>
 
 class GameSys: public PixelToaster::Listener {
 protected:
@@ -40,14 +41,15 @@ protected:
     cpSpace *space;
 
     Cairo::Matrix screenToWorld;
-    double gameScale;
     PixelToaster::Mouse mouse;
+    cpBody *mouseBody;
+    cpConstraint *mouseJoint;
 
-    std::vector<GameObject> gameObjects;
+    std::vector<std::shared_ptr<GameObject>> gameObjects;
     // TODO: walls & window
 
 public:
-    GameSys(const Cairo::Matrix &screenToWorld, double gameScale);
+    GameSys(const Cairo::Matrix &screenToWorld);
 
     void init();
     void sim(double t, double dt);

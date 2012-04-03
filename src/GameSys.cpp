@@ -24,16 +24,18 @@
  */
 
 #include "GameSys.h"
+#include "PlayerObject.h"
 
 #include <chipmunk.h>
 
 #include <cmath>
 
+using namespace std;
 using namespace Cairo;
 using namespace PixelToaster;
 
-GameSys::GameSys(const Matrix &worldToScreen, double gameScale) :
-        bgColor(), space(NULL), screenToWorld(worldToScreen), gameScale(gameScale) {
+GameSys::GameSys(const Matrix &worldToScreen) :
+        bgColor(), screenToWorld(worldToScreen) {
     screenToWorld.invert();
 }
 
@@ -41,13 +43,44 @@ void GameSys::init() {
     cpVect gravity = cpv(0, -100);
     space = cpSpaceNew();
     cpSpaceSetGravity(space, gravity);
+
+    shared_ptr<PlayerObject> player(new PlayerObject(10.0, 2.0));
+    gameObjects.push_back(player);
+
+    for (shared_ptr<GameObject> gameObject : gameObjects) {
+        gameObject->init();
+        cpSpaceAddBody(space, gameObject->getBody());
+    }
+
+    // add a body that tracks the mouse and constrain the player to it
+    mouseBody = cpBodyNew(INFINITY, INFINITY);
+    mouseJoint = cpPivotJointNew2(mouseBody,
+            player->getBody(),
+            cpvzero,
+            cpBodyWorld2Local(player->getBody(), cpvzero));
+    mouseJoint->maxForce = 50000.0f;
+    mouseJoint->errorBias = cpfpow(1.0f - 0.15f, 60.0f);
+    cpSpaceAddConstraint(space, mouseJoint);
 }
 
 void GameSys::cleanup() {
     cpSpaceFree(space);
+    cpConstraintFree(mouseJoint);
+    cpBodyFree(mouseBody);
 }
 
 void GameSys::sim(double t, double dt) {
+    for (shared_ptr<GameObject> gameObject : gameObjects) {
+        gameObject->sim(t, dt);
+    }
+
+    cpVect mousePos = cpv(mouse.x, mouse.y);
+    screenToWorld.transform_point(mousePos.x, mousePos.y);
+    // IIR LPF on mouse movements
+    cpVect newMousePoint = cpvlerp(mouseBody->p, mousePos, 0.95);
+    mouseBody->v = (newMousePoint - mouseBody->p) * dt;
+    mouseBody->p = newMousePoint;
+
     cpSpaceStep(space, dt);
 }
 
@@ -55,23 +88,19 @@ void GameSys::render(RefPtr<Context> cr, double t, double dt) {
     cr->set_source_rgb(1.0, 1.0, 1.0);
     cr->paint();
 
-    cr->set_source_rgb(0.0, 0.0, 0.0);
-    double mouseX = mouse.x, mouseY = mouse.y;
-    screenToWorld.transform_point(mouseX, mouseY);
-    cr->arc(mouseX, mouseY, 0.05, 0, 2 * M_PI);
-    cr->fill();
-
-    cr->scale(gameScale, gameScale);
-    for (GameObject &gameObject : gameObjects) {
-        const cpBody * const body = gameObject.getBody();
+    // render each game object
+    for (shared_ptr<GameObject> gameObject : gameObjects) {
+        const cpBody * const body = gameObject->getBody();
+        // do linear interpolation from the current physics step to right now
         const cpVect pos = cpBodyGetPos(body) + cpBodyGetVel(body) * dt;
         const cpFloat angle = cpBodyGetAngle(body) + cpBodyGetAngVel(body) * dt;
 
         cr->save();
 
+        // transform into local coordinates to make drawing easy
         cr->translate(pos.x, pos.y);
         cr->rotate(angle);
-        gameObject.render(cr, t, dt);
+        gameObject->render(cr, t, dt);
 
         cr->restore();
     }

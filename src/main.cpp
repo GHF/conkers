@@ -60,9 +60,10 @@ int main(int argc, const char * const argv[]) {
     cr->translate((width - minDim) / 2, (height - minDim) / 2);
     cr->scale(minDim, -minDim);
     cr->translate(0.5, -0.5);
+    cr->scale(0.01, 0.01);
     const Matrix worldToScreen = cr->get_matrix();
 
-    GameSys gameSys(worldToScreen, 0.01);
+    GameSys gameSys(worldToScreen);
     display.listener(&gameSys);
 
     SimLoop simLoop(&gameSys, 1.0 / 60);

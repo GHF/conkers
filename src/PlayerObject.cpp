@@ -23,40 +23,26 @@
  *  in this Software without prior written authorization from Xo Wang.
  */
 
-#ifndef GAMEOBJECT_H_
-#define GAMEOBJECT_H_
+#include "PlayerObject.h"
 
-#include <chipmunk.h>
-#include <cairomm/cairomm.h>
+using namespace Cairo;
 
-class GameObject {
-protected:
-    cpBody *body;
+PlayerObject::PlayerObject(cpFloat mass, cpFloat radius, const cpVect &pos) :
+        GameObject(mass, cpMomentForCircle(mass, 0, radius, cpvzero), pos), radius(radius) {
+    shape = cpCircleShapeNew(body, radius, cpvzero);
+}
 
-public:
-    GameObject(cpFloat mass, cpFloat moment, const cpVect &pos = cpvzero) :
-            body(NULL) {
-        body = cpBodyNew(mass, moment);
-        cpBodySetPos(body, pos);
-    }
+void PlayerObject::init() {
 
-    virtual ~GameObject() {
-        if (body != NULL) {
-            cpBodyFree(body);
-        }
-    }
+}
 
-    cpBody *getBody() {
-        return body;
-    }
+void PlayerObject::sim(double t, double dt) {
 
-    const cpBody *getBody() const {
-        return body;
-    }
+}
 
-    virtual void init() = 0;
-    virtual void sim(double t, double dt) = 0;
-    virtual void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt) = 0;
-};
-
-#endif /* GAMEOBJECT_H_ */
+void PlayerObject::render(RefPtr<Context> cr, double t, double dt) {
+    cr->set_source_rgba(0.0, 0.0, 0.0, 0.85);
+    cr->set_line_width(0.2);
+    cr->arc(0, 0, radius, 0, 2 * M_PI);
+    cr->stroke();
+}
