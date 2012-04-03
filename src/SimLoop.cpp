@@ -58,13 +58,14 @@ void SimLoop::acquireSimLock() {
     while (true) {
         while (simLock != 0)
             sched_yield();
-        if (__sync_val_compare_and_swap(&simLock, 0, 1) == 0)
+        int zero = 0;
+        if (std::atomic_compare_exchange_strong(&simLock, &zero, 1))
             break;
     }
 }
 
 void SimLoop::releaseSimLock() {
-    __sync_lock_release(&simLock);
+    simLock = 0;
 }
 
 void SimLoop::start() {
@@ -79,9 +80,9 @@ void SimLoop::stop() {
 }
 
 void SimLoop::acquireRenderLock() {
-    __sync_fetch_and_add(&simLockReaders, 1);
+    simLockReaders++;
     acquireSimLock();
-    __sync_fetch_and_sub(&simLockReaders, 1);
+    simLockReaders--;
 }
 
 void SimLoop::releaseRenderLock() {

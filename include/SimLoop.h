@@ -32,14 +32,16 @@
 
 #include <pthread.h>
 
+#include <atomic>
+
 class SimLoop {
 protected:
     GameSys *gameSys;
     const double dt;
     volatile double t;
     volatile bool simRun;
-    volatile int simLock;
-    volatile int simLockReaders;
+    std::atomic<int> simLock;
+    std::atomic<int> simLockReaders;
     pthread_t simThread;
     PixelToaster::Timer timer;
 

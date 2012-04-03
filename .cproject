@@ -41,7 +41,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/extern/include/chipmunk}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.322552397" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=gnu++0x" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1335894098" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1335894098" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
+								</option>
 								<option id="gnu.cpp.compiler.option.debugging.other.1603674459" name="Other debugging flags" superClass="gnu.cpp.compiler.option.debugging.other" value="" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.38240304" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -121,6 +123,19 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/extern/include/chipmunk}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.587114471" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=gnu++0x" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.277806588" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__DBL_MIN__=((double)2.22507385850720138309e-308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__=((double)4.94065645841246544177e-324L)"/>
+									<listOptionValue builtIn="false" value="__DBL_MAX__=((double)1.79769313486231570815e+308L)"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__=((double)2.22044604925031308085e-16L)"/>
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
+								</option>
+								<option id="gnu.cpp.compiler.option.preprocessor.undef.669208819" superClass="gnu.cpp.compiler.option.preprocessor.undef" valueType="undefDefinedSymbols">
+									<listOptionValue builtIn="false" value="__DBL_MAX__"/>
+									<listOptionValue builtIn="false" value="__DBL_EPSILON__"/>
+									<listOptionValue builtIn="false" value="__DBL_DENORM_MIN__"/>
+									<listOptionValue builtIn="false" value="__DBL_MIN__"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.589295835" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1595776519" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
