@@ -29,8 +29,12 @@
 
 #include <cmath>
 
-GameSys::GameSys() :
-        bgColor(), space(NULL) {
+using namespace Cairo;
+using namespace PixelToaster;
+
+GameSys::GameSys(const Matrix &worldToScreen, double gameScale) :
+        bgColor(), space(NULL), screenToWorld(worldToScreen), gameScale(gameScale) {
+    screenToWorld.invert();
 }
 
 void GameSys::init() {
@@ -47,10 +51,17 @@ void GameSys::sim(double t, double dt) {
     cpSpaceStep(space, dt);
 }
 
-void GameSys::render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt) {
+void GameSys::render(RefPtr<Context> cr, double t, double dt) {
     cr->set_source_rgb(1.0, 1.0, 1.0);
     cr->paint();
 
+    cr->set_source_rgb(0.0, 0.0, 0.0);
+    double mouseX = mouse.x, mouseY = mouse.y;
+    screenToWorld.transform_point(mouseX, mouseY);
+    cr->arc(mouseX, mouseY, 0.05, 0, 2 * M_PI);
+    cr->fill();
+
+    cr->scale(gameScale, gameScale);
     for (GameObject &gameObject : gameObjects) {
         const cpBody * const body = gameObject.getBody();
         const cpVect pos = cpBodyGetPos(body) + cpBodyGetVel(body) * dt;
@@ -64,4 +75,8 @@ void GameSys::render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt) {
 
         cr->restore();
     }
+}
+
+void GameSys::onMouseMove(DisplayInterface &display, Mouse mouse) {
+    this->mouse = mouse;
 }

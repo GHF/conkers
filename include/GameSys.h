@@ -28,25 +28,33 @@
 
 #include "GameObject.h"
 
+#include "../PixelToaster/PixelToaster.h"
+
 #include <cairomm/cairomm.h>
 
 #include <vector>
 
-class GameSys {
+class GameSys: public PixelToaster::Listener {
 protected:
     double bgColor[3];
     cpSpace *space;
+
+    Cairo::Matrix screenToWorld;
+    double gameScale;
+    PixelToaster::Mouse mouse;
 
     std::vector<GameObject> gameObjects;
     // TODO: walls & window
 
 public:
-    GameSys();
+    GameSys(const Cairo::Matrix &screenToWorld, double gameScale);
 
     void init();
     void sim(double t, double dt);
     void cleanup();
     void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
+
+    void onMouseMove(PixelToaster::DisplayInterface &display, PixelToaster::Mouse mouse);
 };
 
 #endif /* GAMESYS_H_ */

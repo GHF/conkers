@@ -25,8 +25,6 @@
 
 #include "SimLoop.h"
 
-#include <sys/time.h>
-
 SimLoop::SimLoop(GameSys *gameSys, double dt) :
         gameSys(gameSys), dt(dt), simRun(false), simLock(0), simLockReaders(0) {
 }
