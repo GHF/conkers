@@ -51,8 +51,8 @@ int main(int argc, const char * const argv[]) {
         height = std::max(atoi(argv[2]), 300);
     }
 
-//    Display display(argv[0], width, height, Output::Default, Mode::FloatingPoint);
-    Display display(argv[0], width, height, Output::Default, Mode::TrueColor);
+//    Display display("CONKERS - by Xo Wang", width, height, Output::Default, Mode::FloatingPoint);
+    Display display("CONKERS - by Xo Wang", width, height, Output::Default, Mode::TrueColor);
 
 //    vector<FloatingPointPixel> backBuffer(width * height);
     vector<TrueColorPixel> pixels(width * height);

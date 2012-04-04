@@ -69,7 +69,7 @@ void ButterEnemyObject::damagingHit(GameObject *other, const cpVect &relVel, dou
     if (!alive) {
         // apply gravity
         cpBodyResetForces(body);
-        const cpVect gravity = cpv(0, -100);
+        const cpVect gravity = cpv(0, -200);
         cpBodyApplyForce(body, gravity * cpBodyGetMass(body), cpvzero);
     }
 }

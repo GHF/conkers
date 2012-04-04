@@ -47,7 +47,7 @@ void SimLoop::loop() {
         }
 
         const double timeToNextStep = realTime - t;
-        if (timeToNextStep > 0.01) {
+        if (timeToNextStep > 0.001) {
             sched_yield();
         }
     }

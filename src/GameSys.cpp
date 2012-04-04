@@ -50,6 +50,8 @@ GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen)
                 score(0),
                 state(WAITING) {
     screenToWorld.invert();
+    mouse.x = screenWidth / 2;
+    mouse.y = screenHeight / 2;
 }
 
 static int playerEnemyCollision(cpArbiter *arb, struct cpSpace *space, void *data) {
@@ -202,6 +204,8 @@ void GameSys::sim(double t, double dt) {
         for (size_t i = 2; i < gameObjects.size(); i++) {
             gameObjects[i]->alive = false;
             gameObjects[i]->expireTime = t + 1.0;
+            const cpVect gravity = cpv(0, -200);
+            cpBodyApplyForce(gameObjects[i]->body, gravity * cpBodyGetMass(gameObjects[i]->body), cpvzero);
         }
     }
 }
@@ -310,7 +314,7 @@ void GameSys::render(RefPtr<Context> cr, double t, double dt) {
         renderText(cr, "3. 00000000", 10, 0, 12);
         renderText(cr, "4. 00000000", 10, 0, 24);
         renderText(cr, "restart game to play again :(", 6, 0, 40);
-        cr->set_source_rgba(0.0, 0.0, 0.0, 0.2 + 0.8 * sin(t * M_PI));
+        cr->set_source_rgba(0.0, 0.0, 0.0, 0.6 + 0.4 * sin(t * M_PI));
         renderText(cr, string("1. ") + scoreText, 10, 0, -12);
     }
 }
@@ -324,7 +328,12 @@ void GameSys::onKeyUp(DisplayInterface &display, Key key) {
     case Key::Space: {
         if (state == WAITING) {
             state = RUNNING;
-            gameObjects.resize(2);
+            for (size_t i = 2; i < gameObjects.size(); i++) {
+                gameObjects[i]->alive = false;
+                gameObjects[i]->expireTime = t + 1.0;
+                const cpVect gravity = cpv(0, -200);
+                cpBodyApplyForce(gameObjects[i]->body, gravity * cpBodyGetMass(gameObjects[i]->body), cpvzero);
+            }
         }
         break;
     }
@@ -364,7 +373,9 @@ int GameSys::playerEnemyCollision(cpArbiter *arb, struct cpSpace *space) {
 
     if (state == RUNNING) {
         enemy->damagingHit(aObject, -relVel, t);
-        score += cpvlength(relVel);
+        if (enemy->isAlive()) {
+            score += cpvlength(relVel);
+        }
     }
 
     return 1;
