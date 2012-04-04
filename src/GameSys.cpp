@@ -46,7 +46,9 @@ GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen)
                 screenToWorld(worldToScreen),
                 screenCenter(cpvzero),
                 bounds(cpBBNew(-105, -90, 105, 90)),
-                damageTimer(-INFINITY) {
+                damageTimer(-INFINITY),
+                score(0),
+                state(WAITING) {
     screenToWorld.invert();
 }
 
@@ -65,7 +67,7 @@ void GameSys::init() {
     gameObjects.push_back(hammer);
 
     for (size_t i = 0; i < 10; i++) {
-        shared_ptr<ButterEnemyObject> enemy(new ButterEnemyObject(player, 2.0, 8.0, cpv(10 + i, 10)));
+        shared_ptr<ButterEnemyObject> enemy(new ButterEnemyObject(player, 2.0, 8.0, cpv(10 + i, 17)));
         gameObjects.push_back(enemy);
     }
 
@@ -128,6 +130,7 @@ void GameSys::init() {
 }
 
 void GameSys::cleanup() {
+    gameObjects.resize(0); // delete all objects before freeing space
     cpSpaceFree(space);
     cpConstraintFree(mouseJoint);
     cpConstraintFree(hammerConstraint);
@@ -136,6 +139,25 @@ void GameSys::cleanup() {
 
 void GameSys::sim(double t, double dt) {
     this->t = t;
+
+    size_t numEnemiesWanted = score / 1000 + (score % 100) / 10;
+    numEnemiesWanted = min(numEnemiesWanted, size_t(100));
+    numEnemiesWanted = max(numEnemiesWanted, size_t(1));
+    uniform_real_distribution<> xDistribution(bounds.l, bounds.r);
+    uniform_real_distribution<> yDistribution(bounds.b, bounds.t);
+    if (state == RUNNING && gameObjects.size() - 2 < numEnemiesWanted) {
+        if (generate_canonical<double, 16>(randomGenerator) < numEnemiesWanted * 0.1 * dt) {
+            cpVect pos = cpv(xDistribution(randomGenerator), yDistribution(randomGenerator));
+            while (cpvdistsq(pos, cpBodyGetPos(gameObjects[0]->getBody())) < 289) {
+                pos = cpv(xDistribution(randomGenerator), yDistribution(randomGenerator));
+            }
+            shared_ptr<ButterEnemyObject> enemy(new ButterEnemyObject(gameObjects[0], 2.0, 8.0, pos));
+            enemy->init(space);
+            cpSpaceAddBody(space, enemy->getBody());
+            gameObjects.push_back(enemy);
+        }
+    }
+
     for (shared_ptr<GameObject> gameObject : gameObjects) {
         gameObject->sim(t, dt);
     }
@@ -168,12 +190,33 @@ void GameSys::sim(double t, double dt) {
 
     cpSpaceStep(space, dt);
 
-    vector<shared_ptr<GameObject>>::iterator newEnd = remove_if(gameObjects.begin(),
+    vector<shared_ptr<GameObject>>::iterator newEnd = remove_if(gameObjects.begin() + 2,
             gameObjects.end(),
             [=](shared_ptr<GameObject> gameObject) -> bool {
                 return !gameObject->isAlive() && gameObject->timeToLive(t) <= 0.0;
             });
-    gameObjects.resize(distance(gameObjects.begin(), newEnd));
+    gameObjects.resize(newEnd - gameObjects.begin());
+
+    if (state == RUNNING && gameObjects[0]->isAlive() == false) {
+        state = TOPSCORE;
+        for (size_t i = 2; i < gameObjects.size(); i++) {
+            gameObjects[i]->alive = false;
+            gameObjects[i]->expireTime = t + 1.0;
+        }
+    }
+}
+
+static void renderText(RefPtr<Context> cr, const string &s, double size, double x, double y, bool centered = true) {
+    cr->select_font_face("Gotham Rounded Bold", FONT_SLANT_NORMAL, FONT_WEIGHT_NORMAL);
+    cr->set_font_size(size);
+    TextExtents te;
+    cr->get_text_extents(s, te);
+    if (centered) {
+        cr->move_to(x - te.width / 2 - te.x_bearing, y - te.height / 2 - te.y_bearing);
+    } else {
+        cr->move_to(x - te.x_bearing, -y - te.y_bearing);
+    }
+    cr->show_text(s);
 }
 
 void GameSys::render(RefPtr<Context> cr, double t, double dt) {
@@ -238,6 +281,38 @@ void GameSys::render(RefPtr<Context> cr, double t, double dt) {
 
         cr->restore();
     }
+
+    if (state == WAITING) {
+        cr->scale(1.0, -1.0);
+        cr->set_source_rgb(0.0, 0.0, 0.0);
+        renderText(cr, "Press SPACE to start", 10, 0, -30);
+        renderText(cr, "CONKERS", 30, 0, 0);
+        renderText(cr, "Xo Wang & Nathan Hays", 12, 0, 30);
+    } else if (state == RUNNING) {
+        double scoreLeft = 20;
+        double scoreTop = 20;
+        screenToWorld.transform_point(scoreLeft, scoreTop);
+        // show score
+        char scoreText[9];
+        snprintf(scoreText, 9, "%08ld", (long) score);
+        cr->translate(screenCenter.x, screenCenter.y);
+        cr->scale(1.0, -1.0);
+        cr->set_source_rgb(0.0, 0.0, 0.0);
+        renderText(cr, scoreText, 7, scoreLeft, scoreTop, false);
+    } else if (state == TOPSCORE) {
+        char scoreText[9];
+        snprintf(scoreText, 9, "%08ld", (long) score);
+        cr->translate(screenCenter.x, screenCenter.y);
+        cr->scale(1.0, -1.0);
+        cr->set_source_rgb(0.0, 0.0, 0.0);
+        renderText(cr, "GAME OVER", 17, 0, -35);
+        renderText(cr, "2. 00000000", 10, 0, 0);
+        renderText(cr, "3. 00000000", 10, 0, 12);
+        renderText(cr, "4. 00000000", 10, 0, 24);
+        renderText(cr, "restart game to play again :(", 6, 0, 40);
+        cr->set_source_rgba(0.0, 0.0, 0.0, 0.2 + 0.8 * sin(t * M_PI));
+        renderText(cr, string("1. ") + scoreText, 10, 0, -12);
+    }
 }
 
 void GameSys::onMouseMove(DisplayInterface &display, Mouse mouse) {
@@ -247,6 +322,10 @@ void GameSys::onMouseMove(DisplayInterface &display, Mouse mouse) {
 void GameSys::onKeyUp(DisplayInterface &display, Key key) {
     switch (key) {
     case Key::Space: {
+        if (state == WAITING) {
+            state = RUNNING;
+            gameObjects.resize(2);
+        }
         break;
     }
 
@@ -263,21 +342,30 @@ int GameSys::playerEnemyCollision(cpArbiter *arb, struct cpSpace *space) {
     GameObject *aObject = static_cast<GameObject *>(cpShapeGetUserData(aShape));
     GameObject *enemy = static_cast<GameObject *>(cpShapeGetUserData(enemyShape));
     if (cpShapeGetUserData(aShape) == gameObjects[0].get()) { // player & enemy
-        aObject->damagingHit(enemy, relVel, t);
-        if (damageTimer < t) {
-            damageTimer = t + 0.05;
-        } else {
-            damageTimer += 0.05;
+        if (state == RUNNING) {
+            if (enemy->isAlive()) {
+                if (damageTimer < t) {
+                    damageTimer = t + 0.05;
+                } else {
+                    damageTimer += 0.05;
+                }
+            }
+            aObject->damagingHit(enemy, relVel, t);
         }
     } else if (cpShapeGetUserData(aShape) == gameObjects[1].get()) { // hammer & enemy
 
     } else if (cpShapeGetUserData(aShape) == NULL) { // wall & enemy
 
     } else { // probably enemy & enemy, so send collision to both
-        aObject->damagingHit(enemy, relVel, t);
+        if (state == RUNNING) {
+            aObject->damagingHit(enemy, relVel, t);
+        }
     }
 
-    enemy->damagingHit(aObject, -relVel, t);
+    if (state == RUNNING) {
+        enemy->damagingHit(aObject, -relVel, t);
+        score += cpvlength(relVel);
+    }
 
     return 1;
 }

@@ -34,9 +34,16 @@
 
 #include <vector>
 #include <memory>
+#include <random>
 
 class GameSys: public PixelToaster::Listener {
 protected:
+    enum GameState {
+        WAITING,
+        RUNNING,
+        TOPSCORE
+    };
+
     double t;
     double bgColor[3];
     cpSpace *space;
@@ -59,6 +66,9 @@ protected:
 
     double damageTimer;
     uint64_t score;
+    GameState state;
+
+    std::mt19937_64 randomGenerator;
 
 public:
     GameSys(int screenWidth, int screenHeight, const Cairo::Matrix &screenToWorld);

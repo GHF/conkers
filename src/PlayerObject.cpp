@@ -29,6 +29,8 @@ using namespace Cairo;
 
 PlayerObject::PlayerObject(cpFloat mass, cpFloat radius, const cpVect &pos) :
         GameObject(mass, cpMomentForCircle(mass, 0, radius, cpvzero), pos), radius(radius) {
+    hP = 102;
+    maxHP = 102;
 }
 
 void PlayerObject::init(cpSpace *space) {
@@ -47,7 +49,11 @@ void PlayerObject::render(RefPtr<Context> cr, double t, double dt) {
     cr->rotate(M_PI / 2 - cpBodyGetAngle(body)); // draw the health bar without rotation
     cr->move_to(0.0, 0.0);
     cr->set_source_rgba(0.2, 0.2, 0.2, 0.2);
-    cr->arc_negative(0.0, 0.0, radius, 0, 2 * M_PI * (hP / maxHP));
+    if (hP != 0.0) {
+        cr->arc_negative(0.0, 0.0, radius, 0, 2 * M_PI * (hP / maxHP));
+    } else {
+        cr->arc(0.0, 0.0, radius, 0, 2 * M_PI);
+    }
     cr->fill();
     cr->move_to(0.0, 0.0);
     cr->set_source_rgb(0.0, 0.0, 0.0);

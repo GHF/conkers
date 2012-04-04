@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include <cairomm/cairomm.h>
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -42,8 +43,13 @@ int main(int argc, const char * const argv[]) {
     using namespace Cairo;
     using namespace std;
 
-    const int width = 1280;
-    const int height = 800;
+    int width = 1280;
+    int height = 800;
+
+    if (argc == 3) {
+        width = std::max(atoi(argv[1]), 300);
+        height = std::max(atoi(argv[2]), 300);
+    }
 
 //    Display display(argv[0], width, height, Output::Default, Mode::FloatingPoint);
     Display display(argv[0], width, height, Output::Default, Mode::TrueColor);
