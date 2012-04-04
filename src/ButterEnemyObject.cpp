@@ -43,6 +43,9 @@ void ButterEnemyObject::init(cpSpace *space) {
 }
 
 void ButterEnemyObject::sim(double t, double dt) {
+    if (!alive)
+        return;
+
     cpBodyResetForces(body);
     const cpVect playerPos = cpBodyGetPos(player->getBody());
     const cpVect rocketAccel = (playerPos - cpBodyGetPos(body)) * (0.75 * cpBodyGetMass(body));
@@ -50,7 +53,8 @@ void ButterEnemyObject::sim(double t, double dt) {
 }
 
 void ButterEnemyObject::render(RefPtr<Context> cr, double t, double dt) {
-    cr->set_source_rgba(0.0, 0.0, 0.0, 0.6);
+    const double alpha = cpflerp(0.0, 0.6, cpfclamp01(expireTime - t));
+    cr->set_source_rgba(0.0, 0.0, 0.0, alpha);
     const double lineWidth = 1.5;
     cr->set_line_width(lineWidth);
     cr->rectangle(-width * 0.5 + lineWidth * 0.5,
@@ -58,4 +62,14 @@ void ButterEnemyObject::render(RefPtr<Context> cr, double t, double dt) {
             width - lineWidth,
             height - lineWidth);
     cr->stroke();
+}
+
+void ButterEnemyObject::damagingHit(GameObject *other, const cpVect &relVel, double t) {
+    GameObject::damagingHit(other, relVel, t);
+    if (!alive) {
+        // apply gravity
+        cpBodyResetForces(body);
+        const cpVect gravity = cpv(0, -100);
+        cpBodyApplyForce(body, gravity * cpBodyGetMass(body), cpvzero);
+    }
 }

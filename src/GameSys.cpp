@@ -30,6 +30,7 @@
 
 #include <chipmunk.h>
 
+#include <algorithm>
 #include <cmath>
 
 using namespace std;
@@ -37,13 +38,15 @@ using namespace Cairo;
 using namespace PixelToaster;
 
 GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen) :
-        bgColor( { 1.0, 1.0, 1.0 }),
+        t(0.0),
+                bgColor( { 1.0, 1.0, 1.0 }),
                 screenWidth(screenWidth),
                 screenHeight(screenHeight),
                 worldToScreen(worldToScreen),
                 screenToWorld(worldToScreen),
                 screenCenter(cpvzero),
-                bounds(cpBBNew(-105, -90, 105, 90)) {
+                bounds(cpBBNew(-105, -90, 105, 90)),
+                damageTimer(-INFINITY) {
     screenToWorld.invert();
 }
 
@@ -65,11 +68,6 @@ void GameSys::init() {
         shared_ptr<ButterEnemyObject> enemy(new ButterEnemyObject(player, 2.0, 8.0, cpv(10 + i, 10)));
         gameObjects.push_back(enemy);
     }
-
-    // apply gravity to the hammer
-    cpBody * const hammerBody = gameObjects[1]->getBody();
-    const cpVect gravity = cpv(0, -100);
-    cpBodyApplyForce(hammerBody, gravity * cpBodyGetMass(hammerBody), cpvzero);
 
     hammerConstraint = cpPinJointNew(player->getBody(), hammer->getBody(), cpvzero, cpv(0, 3.0));
     cpSpaceAddConstraint(space, hammerConstraint);
@@ -96,8 +94,28 @@ void GameSys::init() {
     const cpFloat wallFriction = 0.6;
     for (cpShape *wall : walls) {
         cpShapeSetFriction(wall, wallFriction);
+        cpShapeSetUserData(wall, NULL);
+        cpShapeSetCollisionType(wall, GameObject::ENVIRONMENT);
         cpSpaceAddShape(space, wall);
     }
+
+    cpSpaceAddCollisionHandler(space,
+            GameObject::ENVIRONMENT,
+            GameObject::ENEMY,
+            ::playerEnemyCollision,
+            NULL,
+            NULL,
+            NULL,
+            this);
+
+    cpSpaceAddCollisionHandler(space,
+            GameObject::ENEMY,
+            GameObject::ENEMY,
+            ::playerEnemyCollision,
+            NULL,
+            NULL,
+            NULL,
+            this);
 
     cpSpaceAddCollisionHandler(space,
             GameObject::PLAYER,
@@ -117,6 +135,7 @@ void GameSys::cleanup() {
 }
 
 void GameSys::sim(double t, double dt) {
+    this->t = t;
     for (shared_ptr<GameObject> gameObject : gameObjects) {
         gameObject->sim(t, dt);
     }
@@ -148,9 +167,18 @@ void GameSys::sim(double t, double dt) {
     screenCenter = screenCenter + screenError * (0.75 * dt);
 
     cpSpaceStep(space, dt);
+
+    vector<shared_ptr<GameObject>>::iterator newEnd = remove_if(gameObjects.begin(),
+            gameObjects.end(),
+            [=](shared_ptr<GameObject> gameObject) -> bool {
+                return !gameObject->isAlive() && gameObject->timeToLive(t) <= 0.0;
+            });
+    gameObjects.resize(distance(gameObjects.begin(), newEnd));
 }
 
 void GameSys::render(RefPtr<Context> cr, double t, double dt) {
+    bgColor[1] = cpflerp(0.0, 1.0, cpfclamp01(5 * (t - damageTimer)));
+    bgColor[2] = bgColor[1];
     cr->set_source_rgb(bgColor[0], bgColor[1], bgColor[2]);
     cr->paint();
 
@@ -216,20 +244,40 @@ void GameSys::onMouseMove(DisplayInterface &display, Mouse mouse) {
     this->mouse = mouse;
 }
 
-int GameSys::playerEnemyCollision(cpArbiter *arb, struct cpSpace *space) {
-    CP_ARBITER_GET_SHAPES(arb, playerShape, enemyShape);
-    CP_ARBITER_GET_BODIES(arb, playerBody, enemyBody);
-
-    if (cpShapeGetUserData(playerShape) == gameObjects[0].get()) {
-        printf("collision between player & enemy\n");
-    } else if (cpShapeGetUserData(playerShape) == gameObjects[1].get()) {
-        printf("collision between hammer & enemy\n");
+void GameSys::onKeyUp(DisplayInterface &display, Key key) {
+    switch (key) {
+    case Key::Space: {
+        break;
     }
 
-    cpVect relVel = cpBodyGetVel(playerBody) - cpBodyGetVel(enemyBody);
-    printf("\trelative velocity: %f %f\n", relVel.x, relVel.y);
+    default:
+        break;
+    }
+}
 
-    fflush(stdout);
+int GameSys::playerEnemyCollision(cpArbiter *arb, struct cpSpace *space) {
+    CP_ARBITER_GET_SHAPES(arb, aShape, enemyShape);
+    CP_ARBITER_GET_BODIES(arb, aBody, enemyBody);
+
+    const cpVect relVel = cpBodyGetVel(aBody) - cpBodyGetVel(enemyBody);
+    GameObject *aObject = static_cast<GameObject *>(cpShapeGetUserData(aShape));
+    GameObject *enemy = static_cast<GameObject *>(cpShapeGetUserData(enemyShape));
+    if (cpShapeGetUserData(aShape) == gameObjects[0].get()) { // player & enemy
+        aObject->damagingHit(enemy, relVel, t);
+        if (damageTimer < t) {
+            damageTimer = t + 0.05;
+        } else {
+            damageTimer += 0.05;
+        }
+    } else if (cpShapeGetUserData(aShape) == gameObjects[1].get()) { // hammer & enemy
+
+    } else if (cpShapeGetUserData(aShape) == NULL) { // wall & enemy
+
+    } else { // probably enemy & enemy, so send collision to both
+        aObject->damagingHit(enemy, relVel, t);
+    }
+
+    enemy->damagingHit(aObject, -relVel, t);
 
     return 1;
 }

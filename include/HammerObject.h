@@ -38,6 +38,7 @@ public:
     HammerObject(cpFloat mass, cpFloat width, cpFloat height, const cpVect &pos = cpvzero);
     ~HammerObject() {
         if (shape != NULL) {
+            cpSpaceRemoveShape(shape->space_private, shape);
             cpShapeFree(shape);
         }
     }
@@ -45,6 +46,10 @@ public:
     void init(cpSpace *space);
     void sim(double t, double dt);
     void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
+
+    void damagingHit(GameObject *other, const cpVect &relVel, double t) {
+        // hammer doesn't take damage
+    }
 };
 
 #endif /* HAMMEROBJECT_H_ */

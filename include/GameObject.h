@@ -38,14 +38,16 @@ protected:
     cpBody *body;
     double expireTime;
     bool alive;
+    double hP;
+    double maxHP;
 
 public:
     enum CollisionGroup {
-        PLAYER = 1, ENEMY = 2
+        PLAYER = 1, ENEMY = 2, ENVIRONMENT = 3
     };
 
     GameObject(cpFloat mass, cpFloat moment, const cpVect &pos = cpvzero) :
-            body(NULL), expireTime(0), alive(true) {
+            body(NULL), expireTime(INFINITY), alive(true), hP(68), maxHP(100) {
         body = cpBodyNew(mass, moment);
         cpBodySetPos(body, pos);
         cpBodySetUserData(body, this);
@@ -53,6 +55,7 @@ public:
 
     virtual ~GameObject() {
         if (body != NULL) {
+            cpSpaceRemoveBody(body->space_private, body);
             cpBodyFree(body);
         }
     }
@@ -73,9 +76,27 @@ public:
         return alive;
     }
 
+    virtual double getHP() const {
+        return hP;
+    }
+
+    virtual double getMaxHP() const {
+        return maxHP;
+    }
+
     virtual void init(cpSpace *space) = 0;
     virtual void sim(double t, double dt) = 0;
     virtual void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt) = 0;
+
+    virtual void damagingHit(GameObject *other, const cpVect &relVel, double t) {
+        if (!alive || (other != NULL && !other->isAlive()))
+            return;
+        hP = cpfclamp(hP - cpvlength(relVel) * 0.10, 0, maxHP);
+        if (hP == 0.0) {
+            alive = false;
+            expireTime = t + 1.0;
+        }
+    }
 };
 
 #endif /* GAMEOBJECT_H_ */

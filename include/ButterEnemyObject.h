@@ -42,9 +42,11 @@ public:
     ButterEnemyObject(std::shared_ptr<GameObject> player, cpFloat mass, cpFloat size, const cpVect &pos = cpvzero);
     ~ButterEnemyObject() {
         if (shape != NULL) {
+            cpSpaceRemoveShape(shape->space_private, shape);
             cpShapeFree(shape);
         }
         if (angleConstraint != NULL) {
+            cpSpaceRemoveConstraint(angleConstraint->space_private, angleConstraint);
             cpConstraintFree(angleConstraint);
         }
     }
@@ -52,6 +54,8 @@ public:
     void init(cpSpace *space);
     void sim(double t, double dt);
     void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
+
+    void damagingHit(GameObject *other, const cpVect &relVel, double t);
 };
 
 #endif /* BUTTERENEMYOBJECT_H_ */

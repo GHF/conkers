@@ -37,6 +37,10 @@ void HammerObject::init(cpSpace *space) {
     cpShapeSetGroup(shape, PLAYER);
     cpShapeSetCollisionType(shape, PLAYER);
     cpShapeSetUserData(shape, this);
+
+    // apply gravity
+    const cpVect gravity = cpv(0, -100);
+    cpBodyApplyForce(body, gravity * cpBodyGetMass(body), cpvzero);
 }
 
 void HammerObject::sim(double t, double dt) {

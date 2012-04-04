@@ -37,6 +37,7 @@ public:
     PlayerObject(cpFloat mass, cpFloat radius, const cpVect &pos = cpvzero);
     ~PlayerObject() {
         if (shape != NULL) {
+            cpSpaceRemoveShape(shape->space_private, shape);
             cpShapeFree(shape);
         }
     }

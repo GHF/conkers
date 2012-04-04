@@ -37,6 +37,7 @@
 
 class GameSys: public PixelToaster::Listener {
 protected:
+    double t;
     double bgColor[3];
     cpSpace *space;
 
@@ -56,6 +57,9 @@ protected:
     cpBB bounds;
     cpShape *walls[4];
 
+    double damageTimer;
+    uint64_t score;
+
 public:
     GameSys(int screenWidth, int screenHeight, const Cairo::Matrix &screenToWorld);
 
@@ -65,6 +69,7 @@ public:
     void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
 
     void onMouseMove(PixelToaster::DisplayInterface &display, PixelToaster::Mouse mouse);
+    void onKeyUp(PixelToaster::DisplayInterface &display, PixelToaster::Key key);
 
     int playerEnemyCollision(cpArbiter *arb, struct cpSpace *space);
 };

@@ -44,7 +44,13 @@ void PlayerObject::sim(double t, double dt) {
 }
 
 void PlayerObject::render(RefPtr<Context> cr, double t, double dt) {
-    cr->set_source_rgba(0.0, 0.0, 0.0, 1);
-    cr->arc(0, 0, radius, 0, 2 * M_PI);
+    cr->rotate(M_PI / 2 - cpBodyGetAngle(body)); // draw the health bar without rotation
+    cr->move_to(0.0, 0.0);
+    cr->set_source_rgba(0.2, 0.2, 0.2, 0.2);
+    cr->arc_negative(0.0, 0.0, radius, 0, 2 * M_PI * (hP / maxHP));
+    cr->fill();
+    cr->move_to(0.0, 0.0);
+    cr->set_source_rgb(0.0, 0.0, 0.0);
+    cr->arc_negative(0.0, 0.0, radius, 2 * M_PI * (hP / maxHP), 0);
     cr->fill();
 }
