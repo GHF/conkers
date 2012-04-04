@@ -45,8 +45,10 @@ int main(int argc, const char * const argv[]) {
     const int width = 1280;
     const int height = 800;
 
+//    Display display(argv[0], width, height, Output::Default, Mode::FloatingPoint);
     Display display(argv[0], width, height, Output::Default, Mode::TrueColor);
 
+//    vector<FloatingPointPixel> backBuffer(width * height);
     vector<TrueColorPixel> pixels(width * height);
 
     RefPtr<ImageSurface> surface = ImageSurface::create((unsigned char *) pixels.data(),
@@ -76,6 +78,31 @@ int main(int argc, const char * const argv[]) {
         gameSys.render(cr, simLoop.getLastSimTime(), dt);
         simLoop.releaseRenderLock();
         cr->restore();
+
+//        if ((uintptr_t(pixels.data()) & 0xF != 0) || (uintptr_t(backBuffer.data()) & 0xF != 0)) {
+//            fprintf(stderr, "pixel buffer is not aligned\n");
+//            break;
+//        }
+//        const __m128 scaling = _mm_set1_ps(1.0 / 255.0);
+//        for (size_t i = 0; i < pixels.size(); i += 4) {
+//            const __m128i bytes = _mm_load_si128((__m128i *) &pixels[i]);
+//            const __m128i shorts0 = _mm_unpacklo_epi8(bytes, _mm_set1_epi8(0));
+//            const __m128i shorts1 = _mm_unpackhi_epi8(bytes, _mm_set1_epi8(0));
+//            const __m128i longs0 = _mm_unpacklo_epi16(shorts0, _mm_set1_epi16(0));
+//            const __m128i longs1 = _mm_unpackhi_epi16(shorts0, _mm_set1_epi16(0));
+//            const __m128i longs2 = _mm_unpacklo_epi16(shorts1, _mm_set1_epi16(0));
+//            const __m128i longs3 = _mm_unpackhi_epi16(shorts1, _mm_set1_epi16(0));
+//            const __m128 fp0 = _mm_cvtepi32_ps(longs0);
+//            const __m128 fp1 = _mm_cvtepi32_ps(longs1);
+//            const __m128 fp2 = _mm_cvtepi32_ps(longs2);
+//            const __m128 fp3 = _mm_cvtepi32_ps(longs3);
+//            _mm_store_ps((float *) &backBuffer[i], _mm_mul_ps(fp0, scaling));
+//            _mm_store_ps((float *) &backBuffer[i + 1], _mm_mul_ps(fp1, scaling));
+//            _mm_store_ps((float *) &backBuffer[i + 2], _mm_mul_ps(fp2, scaling));
+//            _mm_store_ps((float *) &backBuffer[i + 3], _mm_mul_ps(fp3, scaling));
+//        }
+//
+//        display.update(backBuffer);
         display.update(pixels);
     }
 
