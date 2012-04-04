@@ -23,26 +23,35 @@
  *  in this Software without prior written authorization from Xo Wang.
  */
 
-#include "HammerObject.h"
+#ifndef BUTTERENEMYOBJECT_H_
+#define BUTTERENEMYOBJECT_H_
 
-using namespace Cairo;
+#include "GameObject.h"
 
-HammerObject::HammerObject(cpFloat mass, cpFloat width, cpFloat height, const cpVect &pos) :
-        GameObject(mass, cpMomentForBox(mass, width, height), pos), width(width), height(height) {
-}
+#include <memory>
 
-void HammerObject::init(cpSpace *space) {
-    shape = cpSpaceAddShape(space, cpBoxShapeNew(body, width, height));
-    cpShapeSetFriction(shape, 0.8);
-    cpShapeSetGroup(shape, PLAYER);
-}
+class ButterEnemyObject: public GameObject {
+protected:
+    cpFloat width;
+    cpFloat height;
+    cpShape *shape;
+    cpConstraint *angleConstraint;
+    std::shared_ptr<GameObject> player;
 
-void HammerObject::sim(double t, double dt) {
+public:
+    ButterEnemyObject(std::shared_ptr<GameObject> player, cpFloat mass, cpFloat size, const cpVect &pos = cpvzero);
+    ~ButterEnemyObject() {
+        if (shape != NULL) {
+            cpShapeFree(shape);
+        }
+        if (angleConstraint != NULL) {
+            cpConstraintFree(angleConstraint);
+        }
+    }
 
-}
+    void init(cpSpace *space);
+    void sim(double t, double dt);
+    void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
+};
 
-void HammerObject::render(RefPtr<Context> cr, double t, double dt) {
-    cr->set_source_rgba(0.0, 0.0, 0.0, 1.0);
-    cr->rectangle(-width * 0.5, -height * 0.5, width, height);
-    cr->fill();
-}
+#endif /* BUTTERENEMYOBJECT_H_ */

@@ -26,6 +26,7 @@
 #include "GameSys.h"
 #include "PlayerObject.h"
 #include "HammerObject.h"
+#include "ButterEnemyObject.h"
 
 #include <chipmunk.h>
 
@@ -47,18 +48,26 @@ GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen)
 }
 
 void GameSys::init() {
-    cpVect gravity = cpv(0, -100);
     space = cpSpaceNew();
-    cpSpaceSetGravity(space, gravity);
     cpSpaceSetDamping(space, 0.3);
 
-    shared_ptr<PlayerObject> player(new PlayerObject(10.0, 3.0));
+    shared_ptr<PlayerObject> player(new PlayerObject(10.0, 4.0));
     gameObjects.push_back(player);
 
-    shared_ptr<HammerObject> hammer(new HammerObject(20.0, 7.0, 5.0, cpv(0, -12.0)));
+    shared_ptr<HammerObject> hammer(new HammerObject(20.0, 7.0, 7.0, cpv(0, -12.0)));
     gameObjects.push_back(hammer);
 
-    hammerConstraint = cpPinJointNew(player->getBody(), hammer->getBody(), cpvzero, cpv(0, 2.3));
+    for (size_t i = 0; i < 10; i++) {
+        shared_ptr<ButterEnemyObject> enemy(new ButterEnemyObject(player, 2.0, 8.0, cpv(10 + i, 10)));
+        gameObjects.push_back(enemy);
+    }
+
+    // apply gravity to the hammer
+    cpBody * const hammerBody = gameObjects[1]->getBody();
+    const cpVect gravity = cpv(0, -100);
+    cpBodyApplyForce(hammerBody, gravity * cpBodyGetMass(hammerBody), cpvzero);
+
+    hammerConstraint = cpPinJointNew(player->getBody(), hammer->getBody(), cpvzero, cpv(0, 3.0));
     cpSpaceAddConstraint(space, hammerConstraint);
 
     for (shared_ptr<GameObject> gameObject : gameObjects) {
@@ -76,10 +85,10 @@ void GameSys::init() {
     cpSpaceAddConstraint(space, mouseJoint);
 
     // set up walls
-    walls[0] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.t), cpv(bounds.l, bounds.b), 0);
-    walls[1] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.b), cpv(bounds.r, bounds.b), 0);
-    walls[2] = cpSegmentShapeNew(space->staticBody, cpv(bounds.r, bounds.t), cpv(bounds.r, bounds.b), 0);
-    walls[3] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.t), cpv(bounds.r, bounds.t), 0);
+    walls[0] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l, bounds.t + 1), cpv(bounds.l, bounds.b - 1), 0);
+    walls[1] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l - 1, bounds.b), cpv(bounds.r + 1, bounds.b), 0);
+    walls[2] = cpSegmentShapeNew(space->staticBody, cpv(bounds.r, bounds.t + 1), cpv(bounds.r, bounds.b - 1), 0);
+    walls[3] = cpSegmentShapeNew(space->staticBody, cpv(bounds.l - 1, bounds.t), cpv(bounds.r + 1, bounds.t), 0);
     const cpFloat wallFriction = 0.6;
     for (cpShape *wall : walls) {
         cpShapeSetFriction(wall, wallFriction);
@@ -166,8 +175,8 @@ void GameSys::render(RefPtr<Context> cr, double t, double dt) {
             + cpBodyGetVelAtLocalPoint(playerBody, anchor1) * dt;
     const cpVect hammerPos = cpBodyLocal2World(hammerBody, anchor2)
             + cpBodyGetVelAtLocalPoint(hammerBody, anchor2) * dt;
-    cr->set_line_width(0.7);
-    cr->set_source_rgba(0.0, 0.0, 0.0, 0.5);
+    cr->set_line_width(1.0);
+    cr->set_source_rgb(0.0, 0.0, 0.0);
     cr->move_to(playerPos.x, playerPos.y);
     cr->line_to(hammerPos.x, hammerPos.y);
     cr->stroke();

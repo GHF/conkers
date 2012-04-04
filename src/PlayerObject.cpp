@@ -33,6 +33,7 @@ PlayerObject::PlayerObject(cpFloat mass, cpFloat radius, const cpVect &pos) :
 
 void PlayerObject::init(cpSpace *space) {
     shape = cpSpaceAddShape(space, cpCircleShapeNew(body, radius, cpvzero));
+    cpShapeSetGroup(shape, PLAYER);
 }
 
 void PlayerObject::sim(double t, double dt) {

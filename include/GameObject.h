@@ -34,6 +34,11 @@ protected:
     cpBody *body;
 
 public:
+    enum CollisionGroup {
+        PLAYER = 1,
+        ENEMY = 2
+    };
+
     GameObject(cpFloat mass, cpFloat moment, const cpVect &pos = cpvzero) :
             body(NULL) {
         body = cpBodyNew(mass, moment);

@@ -23,26 +23,36 @@
  *  in this Software without prior written authorization from Xo Wang.
  */
 
-#include "HammerObject.h"
+#include "ButterEnemyObject.h"
 
+using namespace std;
 using namespace Cairo;
 
-HammerObject::HammerObject(cpFloat mass, cpFloat width, cpFloat height, const cpVect &pos) :
-        GameObject(mass, cpMomentForBox(mass, width, height), pos), width(width), height(height) {
+ButterEnemyObject::ButterEnemyObject(shared_ptr<GameObject> player, cpFloat mass, cpFloat size, const cpVect &pos) :
+        GameObject(mass, cpMomentForBox(mass, size, size), pos), width(size), height(size), player(player) {
 }
 
-void HammerObject::init(cpSpace *space) {
+void ButterEnemyObject::init(cpSpace *space) {
     shape = cpSpaceAddShape(space, cpBoxShapeNew(body, width, height));
-    cpShapeSetFriction(shape, 0.8);
-    cpShapeSetGroup(shape, PLAYER);
+    cpShapeSetFriction(shape, 0.1);
+    angleConstraint = cpDampedRotarySpringNew(space->staticBody, body, M_PI / 4, 1000.0, 0.8);
+    cpSpaceAddConstraint(space, angleConstraint);
 }
 
-void HammerObject::sim(double t, double dt) {
-
+void ButterEnemyObject::sim(double t, double dt) {
+    cpBodyResetForces(body);
+    const cpVect playerPos = cpBodyGetPos(player->getBody());
+    const cpVect rocketAccel = (playerPos - cpBodyGetPos(body)) * (0.75 * cpBodyGetMass(body));
+    cpBodyApplyForce(body, rocketAccel, cpvzero);
 }
 
-void HammerObject::render(RefPtr<Context> cr, double t, double dt) {
-    cr->set_source_rgba(0.0, 0.0, 0.0, 1.0);
-    cr->rectangle(-width * 0.5, -height * 0.5, width, height);
-    cr->fill();
+void ButterEnemyObject::render(RefPtr<Context> cr, double t, double dt) {
+    cr->set_source_rgba(0.0, 0.0, 0.0, 0.6);
+    const double lineWidth = 1.5;
+    cr->set_line_width(lineWidth);
+    cr->rectangle(-width * 0.5 + lineWidth * 0.5,
+            -height * 0.5 + lineWidth * 0.5,
+            width - lineWidth,
+            height - lineWidth);
+    cr->stroke();
 }
