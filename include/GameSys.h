@@ -65,6 +65,8 @@ public:
     void render(Cairo::RefPtr<Cairo::Context> cr, double t, double dt);
 
     void onMouseMove(PixelToaster::DisplayInterface &display, PixelToaster::Mouse mouse);
+
+    int playerEnemyCollision(cpArbiter *arb, struct cpSpace *space);
 };
 
 #endif /* GAMESYS_H_ */

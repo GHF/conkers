@@ -35,6 +35,9 @@ ButterEnemyObject::ButterEnemyObject(shared_ptr<GameObject> player, cpFloat mass
 void ButterEnemyObject::init(cpSpace *space) {
     shape = cpSpaceAddShape(space, cpBoxShapeNew(body, width, height));
     cpShapeSetFriction(shape, 0.1);
+    cpShapeSetCollisionType(shape, ENEMY);
+    cpShapeSetUserData(shape, this);
+
     angleConstraint = cpDampedRotarySpringNew(space->staticBody, body, M_PI / 4, 1000.0, 0.8);
     cpSpaceAddConstraint(space, angleConstraint);
 }

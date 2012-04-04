@@ -29,20 +29,26 @@
 #include <chipmunk.h>
 #include <cairomm/cairomm.h>
 
+#include <algorithm>
+
 class GameObject {
+    friend class GameSys;
+
 protected:
     cpBody *body;
+    double expireTime;
+    bool alive;
 
 public:
     enum CollisionGroup {
-        PLAYER = 1,
-        ENEMY = 2
+        PLAYER = 1, ENEMY = 2
     };
 
     GameObject(cpFloat mass, cpFloat moment, const cpVect &pos = cpvzero) :
-            body(NULL) {
+            body(NULL), expireTime(0), alive(true) {
         body = cpBodyNew(mass, moment);
         cpBodySetPos(body, pos);
+        cpBodySetUserData(body, this);
     }
 
     virtual ~GameObject() {
@@ -51,12 +57,20 @@ public:
         }
     }
 
-    cpBody *getBody() {
+    virtual cpBody *getBody() {
         return body;
     }
 
-    const cpBody *getBody() const {
+    virtual const cpBody *getBody() const {
         return body;
+    }
+
+    virtual double timeToLive(double t) {
+        return std::max(expireTime - t, 0.0);
+    }
+
+    virtual bool isAlive() const {
+        return alive;
     }
 
     virtual void init(cpSpace *space) = 0;

@@ -47,6 +47,10 @@ GameSys::GameSys(int screenWidth, int screenHeight, const Matrix &worldToScreen)
     screenToWorld.invert();
 }
 
+static int playerEnemyCollision(cpArbiter *arb, struct cpSpace *space, void *data) {
+    return static_cast<GameSys *>(data)->playerEnemyCollision(arb, space);
+}
+
 void GameSys::init() {
     space = cpSpaceNew();
     cpSpaceSetDamping(space, 0.3);
@@ -94,6 +98,15 @@ void GameSys::init() {
         cpShapeSetFriction(wall, wallFriction);
         cpSpaceAddShape(space, wall);
     }
+
+    cpSpaceAddCollisionHandler(space,
+            GameObject::PLAYER,
+            GameObject::ENEMY,
+            ::playerEnemyCollision,
+            NULL,
+            NULL,
+            NULL,
+            this);
 }
 
 void GameSys::cleanup() {
@@ -201,4 +214,22 @@ void GameSys::render(RefPtr<Context> cr, double t, double dt) {
 
 void GameSys::onMouseMove(DisplayInterface &display, Mouse mouse) {
     this->mouse = mouse;
+}
+
+int GameSys::playerEnemyCollision(cpArbiter *arb, struct cpSpace *space) {
+    CP_ARBITER_GET_SHAPES(arb, playerShape, enemyShape);
+    CP_ARBITER_GET_BODIES(arb, playerBody, enemyBody);
+
+    if (cpShapeGetUserData(playerShape) == gameObjects[0].get()) {
+        printf("collision between player & enemy\n");
+    } else if (cpShapeGetUserData(playerShape) == gameObjects[1].get()) {
+        printf("collision between hammer & enemy\n");
+    }
+
+    cpVect relVel = cpBodyGetVel(playerBody) - cpBodyGetVel(enemyBody);
+    printf("\trelative velocity: %f %f\n", relVel.x, relVel.y);
+
+    fflush(stdout);
+
+    return 1;
 }

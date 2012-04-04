@@ -35,6 +35,8 @@ void HammerObject::init(cpSpace *space) {
     shape = cpSpaceAddShape(space, cpBoxShapeNew(body, width, height));
     cpShapeSetFriction(shape, 0.8);
     cpShapeSetGroup(shape, PLAYER);
+    cpShapeSetCollisionType(shape, PLAYER);
+    cpShapeSetUserData(shape, this);
 }
 
 void HammerObject::sim(double t, double dt) {
